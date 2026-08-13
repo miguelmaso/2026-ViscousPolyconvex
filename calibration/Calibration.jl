@@ -1,11 +1,11 @@
-using HyperFEM
-using HyperCalibration
+using HyperFEM, HyperCalibration
+using Optim
 using CSV
 using Plots
 
 experiments = CSV.read(joinpath(@__DIR__, "data", "quasi-static.csv"), UniaxialQuasiStaticTest)
 
-build_model(μ, N) = NeoHookean3D(μ=μ, λ=0.0)
+build_model(μ) = NeoHookean3D(μ=μ, λ=0.0)
 pn = [  "μ"]  # Parameter names
 p0 = [  1e4]  # Initial seed
 
