@@ -15,7 +15,7 @@ function generate_tessellation(; width, thick, refinement, args...)
   labels = get_face_labeling(geometry)
   add_tag_from_tags!(labels, "top",    CartesianTags.faceXY1⁺)
   add_tag_from_tags!(labels, "bottom", CartesianTags.faceXY0⁺)
-  add_tag_from_vertex_filter!(labels, "center", geometry, p->p[3] ≈ 0.0 && abs(p[1]) <= 0.3width+1e-6 && abs(p[2]) <= 0.3width+1e-6)
+  add_tag_from_vertex_filter!(labels, "center", geometry, p -> abs(p[1]) <= 0.1width+1e-6 && abs(p[2]) <= 0.1width+1e-6)
   geometry
 end
 
@@ -53,7 +53,7 @@ end
 function solve_problem(data)
   
   pname = stem(@__FILE__)
-  folder = abspath(dirname(@__FILE__), "results_$(data.refinement)")
+  folder = abspath(dirname(@__FILE__), "results")
   outpath = joinpath(folder, pname)
   setupfolder(folder; remove=".vtu")
 
@@ -196,6 +196,7 @@ function solve_problem(data)
         update_state!(model, Ah, Fh, Fh⁻)
         update_velocity!(υh, uh⁺, uh⁻, Δt)
         update_displacements!(uh⁻, uh⁺)
+        TrialFESpace!(Uu⁻, data.dirichlet_u, time)  # TODO: Quitar esta linea, debería ser redundante, supuestamente ya está incluida en update_displacements!
       end
     catch e
       rethrow(e)
@@ -217,12 +218,12 @@ problem_data = let
   order = 1
   t_end = 1.0
   Δt = 0.2 * thick / (refinement * speed)
-  
+
   dir_u_tags = ["center"]
   dir_u_values = [[0.0, 0.0, 1.0]]
   dir_u_time = [t -> t*speed]
   dirichlet_u = DirichletBC(dir_u_tags, dir_u_values, dir_u_time)
-      
+
   (; width, thick, speed, refinement, order, t_end, Δt, dirichlet_u)
 end
 
