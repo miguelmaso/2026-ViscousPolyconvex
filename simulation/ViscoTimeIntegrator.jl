@@ -1,5 +1,5 @@
-using HyperFEM
-using HyperFEM.ComputationalModels.PostMetrics
+using Revise
+using HyperFEM, HyperFEM.ComputationalModels.PostMetrics
 using Gridap, Gridap.FESpaces, Gridap.Geometry
 using GridapSolvers, GridapSolvers.NonlinearSolvers
 using Printf
