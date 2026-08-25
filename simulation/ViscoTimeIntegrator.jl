@@ -131,26 +131,10 @@ function solve_problem(data)
 
   function post_vtk!(pvd, step, time)
     if mod(step, 10) == 0
-      Ph = interpolate_L2_tensor(∂Ψ∂F ∘ (Fh, Fh⁻, Ah...), Ω, dΩ)
-      Jh = interpolate_L2_scalar(J∘Fh, Ω, dΩ)
-      pvd[time] = createvtk(Ω, outpath * @sprintf("_%03d", step), cellfields=["u" => uh⁺, "J" => Jh])
+      Ph = interpolate_L2_field(∂Ψ∂F ∘ (Fh, Fh⁻, Ah...), Ω, dΩ)
+      Jh = interpolate_L2_field(J∘Fh, Ω, dΩ)
+      pvd[time] = createvtk(Ω, outpath * @sprintf("_%03d", step), cellfields=["u" => uh⁺, "J" => Jh, "P" => Ph])
     end
-  end
-
-  function update_velocity!(vh, xh⁺, xh⁻, Δt)
-    v = get_free_dof_values(vh)
-    v .*= -1.0
-    v .-= (2.0 / Δt) * get_free_dof_values(xh⁻)
-    v .+= (2.0 / Δt) * get_free_dof_values(xh⁺)
-    return vh
-  end
-
-  function update_displacements!(xh⁻, xh⁺)
-    x = get_free_dof_values(xh⁻)
-    x .= get_free_dof_values(xh⁺)
-    x_dir = get_dirichlet_dof_values(get_fe_space(xh⁻))
-    x_dir .= get_dirichlet_dof_values(get_fe_space(xh⁺))
-    return xh⁻
   end
 
   # Time integration
