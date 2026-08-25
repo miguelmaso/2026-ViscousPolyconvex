@@ -29,3 +29,11 @@ JuliaLocalPreferences.toml
 
 # IDE files
 .vscode
+
+# Image files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+!docs/img/*
