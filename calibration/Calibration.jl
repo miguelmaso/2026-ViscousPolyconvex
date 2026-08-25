@@ -6,7 +6,8 @@ using Plots
 
 default(
   linewidth = 2,
-  mswidth = 0
+  mswidth = 0,
+  palette = :seaborn_colorblind
 )
 
 ## Load data
