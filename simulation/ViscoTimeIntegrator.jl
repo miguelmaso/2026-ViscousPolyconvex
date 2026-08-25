@@ -8,14 +8,14 @@ using JLD2
 
 ## Domain
 
-function generate_tessellation(; width, thick, refinement, args...)
+function generate_tessellation(; width, thick, hrefinement, hdivisions, args...)
   domain = (-0.5width, 0.5width, -0.5width, 0.5width, 0.0, thick)
-  partition = refinement .* (5, 5, 1)
+  partition = hrefinement .* (hdivisions, hdivisions, 1)
   geometry = CartesianDiscreteModel(domain, partition)
   labels = get_face_labeling(geometry)
   add_tag_from_tags!(labels, "top",    CartesianTags.faceXY1⁺)
   add_tag_from_tags!(labels, "bottom", CartesianTags.faceXY0⁺)
-  add_tag_from_vertex_filter!(labels, "center", geometry, p -> abs(p[1]) <= 0.1width+1e-6 && abs(p[2]) <= 0.1width+1e-6)
+  add_tag_from_vertex_filter!(labels, "center", geometry, p -> abs(p[1]) < 0.51width/hdivisions && abs(p[2]) < 0.51width/hdivisions)
   geometry
 end
 
@@ -23,27 +23,21 @@ end
 ## Constitutive model
 
 function build_model(; args...)
-  # Bulk modulus
-  κr = 1e8  # [Pa]
 
-  # Yeoh model
-  C10 = 1e4   # [Pa]
-  C20 = -94.0 # [Pa]
-  C30 = 0.82  # [Pa]
+  # Equilibrium branch
+  μe = 13.4e3  # [Pa]
+  κr = 2.5e6   # [Pa]
 
-  # Viscous branches
-  μ1 = 1.1e4    # [Pa]
-  τ1 = 10^1.8   # [s]
-  μ2 = 6.6e3    # [Pa]
-  τ2 = 10^3.5   # [s]
-  μ3 = 3.7e4    # [Pa]
-  τ3 = 10^0.63  # [s]
+  # Non-equilibrium branches
+  μ1 = 30.9e3  # [Pa]
+  τ1 = 6.65    # [s]
+  μ2 = 11.4e3  # [Pa]
+  τ2 = 144.1   # [s]
 
-  long_term = Yeoh3D(C10=C10, C20=C20, C30=C30, λ=0.0) + VolumetricEnergy(λ=κr)
+  equilibrium = NeoHookean3D(μ=μe, λ=0.0) + VolumetricEnergy(λ=κr)
   branch_1 = ViscousPolyconvex(μ=μ1, τ=τ1)
   branch_2 = ViscousPolyconvex(μ=μ2, τ=τ2)
-  branch_3 = ViscousPolyconvex(μ=μ3, τ=τ3)
-  visco_model = GeneralizedMaxwell(long_term, branch_1, branch_2, branch_3)
+  visco_model = GeneralizedMaxwell(equilibrium, branch_1, branch_2)
   return visco_model
 end
 
@@ -70,7 +64,7 @@ function solve_problem(data)
 
   Δt = data.Δt
   t_end = data.t_end
-  order = data.order
+  order = data.prefinement
   degree = 2 * order
   Ω = Triangulation(geometry)
   dΩ = Measure(Ω, degree)
@@ -136,7 +130,7 @@ function solve_problem(data)
   end
 
   function post_vtk!(pvd, step, time)
-    if mod(step, 5) == 0
+    if mod(step, 10) == 0
       Ph = interpolate_L2_tensor(∂Ψ∂F ∘ (Fh, Fh⁻, Ah...), Ω, dΩ)
       Jh = interpolate_L2_scalar(J∘Fh, Ω, dΩ)
       pvd[time] = createvtk(Ω, outpath * @sprintf("_%03d", step), cellfields=["u" => uh⁺, "J" => Jh])
@@ -196,7 +190,6 @@ function solve_problem(data)
         update_state!(model, Ah, Fh, Fh⁻)
         update_velocity!(υh, uh⁺, uh⁻, Δt)
         update_displacements!(uh⁻, uh⁺)
-        TrialFESpace!(Uu⁻, data.dirichlet_u, time)  # TODO: Quitar esta linea, debería ser redundante, supuestamente ya está incluida en update_displacements!
       end
     catch e
       rethrow(e)
@@ -211,20 +204,22 @@ end
 ## Problem definition & solve
 
 problem_data = let
-  width = 0.1
-  thick = 0.01
+  width = 0.2
+  thick = 0.001
   speed = 0.1
-  refinement = 1
-  order = 1
-  t_end = 1.0
-  Δt = 0.2 * thick / (refinement * speed)
+  hdivisions = 35
+  hrefinement = 1
+  prefinement = 2
+  t_end = 0.5
+  CFL = 0.2
+  Δt = CFL * thick / (prefinement * hrefinement * speed)
 
   dir_u_tags = ["center"]
   dir_u_values = [[0.0, 0.0, 1.0]]
   dir_u_time = [t -> t*speed]
   dirichlet_u = DirichletBC(dir_u_tags, dir_u_values, dir_u_time)
 
-  (; width, thick, speed, refinement, order, t_end, Δt, dirichlet_u)
+  (; width, thick, speed, hrefinement, hdivisions, prefinement, t_end, Δt, dirichlet_u)
 end
 
 solve_problem(problem_data)
