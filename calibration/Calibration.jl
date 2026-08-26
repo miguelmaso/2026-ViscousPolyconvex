@@ -25,36 +25,34 @@ build_equilibrium(μ) = NeoHookean3D(μ=μ, λ=0.0)
 pn = [  "μ"]  # Parameter names
 p0 = [  1e4]  # Initial seed
 
-f(p) = loss(build_equilibrium, p, quasi_static_set)
+f(p) = normalized_mse(build_equilibrium, p, quasi_static_set)
 
-equi_result = optimize(f, p0, NelderMead())
-equi_params = Optim.minimizer(equi_result)
-equilibrium_term = build_equilibrium(equi_params...)
+equil_opt = optimize(f, p0, NelderMead())
+equil_result = CalibrationResult(build_equilibrium, Optim.minimizer(equil_opt), quasi_static_set)
 
-@show equi_params
-display(plot(equilibrium_term, quasi_static_set[1], xlabel="Stretch [-]", ylabel="Stress [KPa]", units_scale=1e-3))
+println(parameter_stats(equil_result, names=pn))
+display(plot(equil_result, quasi_static_set[1], xlabel="Stretch [-]", ylabel="Stress [KPa]", units_scale=1e-3))
 
 
 ## Non-equilibrium branches
 
 build_branch(μ, τ) = ViscousPolyconvex(μ=μ, τ=τ)
 build_branches(p...) = map(splat(build_branch), Iterators.partition(p, 2))
-build_visco(p...) = GeneralizedMaxwell(build_equilibrium(equi_params...), build_branches(p...)...)
+build_visco(p...) = GeneralizedMaxwell(equil_result.model, build_branches(p...)...)
 n_branches = 2
 pn = reduce(vcat, ["μ$i", "t$i"] for i in 1:n_branches)  # Parameter names
 p0 = reduce(vcat, [  1e4,   1.0] for _ in 1:n_branches)  # Initial seed
 lb = reduce(vcat, [  1e3,  -1.0] for _ in 1:n_branches)  # Lower search limits
 ub = reduce(vcat, [  1e5,   4.0] for _ in 1:n_branches)  # Upper search limits
 
-f(p) = loss(build_visco, p, cyclic_loading_set)
+f(p) = normalized_mse(build_visco, p, cyclic_loading_set)
 
-noneq_result = optimize(f, p0, ParticleSwarm())
-noneq_params = Optim.minimizer(noneq_result)
-viscous_model = build_visco(noneq_params...)
+noneq_opt = optimize(f, p0, ParticleSwarm())
+noneq_result = CalibrationResult(build_visco, Optim.minimizer(noneq_opt), cyclic_loading_set)
 
-@show noneq_params
+print(parameter_stats(noneq_result, names=pn))
 fixed_stretch_subset = filter(r -> max_stretch(r) ≈ 1.98, cyclic_loading_set)
 fixed_loading_rate_subset = filter(r -> rate(r) ≈ 0.03, cyclic_loading_set)
-display(plot(viscous_model, fixed_stretch_subset, xlabel="Stretch [-]", ylabel="Stress [KPa]", units_scale=1e-3, labels=map(pretty_label(rate), fixed_stretch_subset)))
-display(plot(viscous_model, fixed_loading_rate_subset, xlabel="Stretch [-]", ylabel="Stress [KPa]", units_scale=1e-3, labels=map(pretty_label(max_stretch), fixed_loading_rate_subset)))
+display(plot(noneq_result, fixed_stretch_subset, xlabel="Stretch [-]", ylabel="Stress [KPa]", units_scale=1e-3, labels=map(pretty_label(rate), fixed_stretch_subset)))
+display(plot(noneq_result, fixed_loading_rate_subset, xlabel="Stretch [-]", ylabel="Stress [KPa]", units_scale=1e-3, labels=map(pretty_label(max_stretch), fixed_loading_rate_subset)))
 
