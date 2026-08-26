@@ -3,6 +3,7 @@ using HyperFEM, HyperFEM.ComputationalModels.PostMetrics
 using Gridap, Gridap.FESpaces, Gridap.Geometry
 using GridapSolvers, GridapSolvers.NonlinearSolvers
 using Printf
+using Plots
 using JLD2
 
 
@@ -117,16 +118,20 @@ function solve_problem(data)
 
   # Post-processor
 
-  fields = (:time, :Ψmec, :Ψdir, :Dvis)
+  fields = (:time, :KE, :EE, :Dvis, :Dir)
   metrics = NamedTuple(f => Float64[] for f in fields)
 
   function post_metrics!(data, step, time)
+    ρ₀ = 960.0
     b = assemble_vector(v -> residual(uh⁺, v), DirichletFESpace(Vu))[:]
-    dudt_dir = (get_dirichlet_dof_values(Uu) - get_dirichlet_dof_values(Uu⁻)) / Δt
+    Δu_dir = get_dirichlet_dof_values(Uu) - get_dirichlet_dof_values(Uu⁻)
+    Dvis⁻ = step > 1 ? data.Dvis[end] : 0.0
+    Dir⁻ = step > 1 ? data.Dir[end] : 0.0
     push!(data.time, time)
-    push!(data.Ψmec, sum(residual(uh⁺, uh⁺-uh⁻))/Δt)
-    push!(data.Ψdir, b · dudt_dir)
-    push!(data.Dvis, sum(∫( D∘(Fh, Fh⁻, Ah...) )dΩ))
+    push!(data.KE, sum(∫( 0.5ρ₀*υh·υh )dΩ))
+    push!(data.EE, sum(∫( Ψ∘(Fh, Fh⁻, Ah...) )dΩ))
+    push!(data.Dvis, sum(∫( D∘(Fh, Fh⁻, Ah...) )dΩ) * Δt + Dvis⁻)
+    push!(data.Dir, b · Δu_dir + Dir⁻)
   end
 
   function post_vtk!(pvd, step, time)
@@ -191,11 +196,11 @@ problem_data = let
   width = 0.2
   thick = 0.001
   speed = 0.1
-  hdivisions = 35
+  hdivisions = 7
   hrefinement = 1
   prefinement = 2
   t_end = 0.5
-  CFL = 0.2
+  CFL = 0.4
   Δt = CFL * thick / (prefinement * hrefinement * speed)
 
   dir_u_tags = ["center"]
@@ -206,4 +211,8 @@ problem_data = let
   (; width, thick, speed, hrefinement, hdivisions, prefinement, t_end, Δt, dirichlet_u)
 end
 
-solve_problem(problem_data)
+metrics, uh = solve_problem(problem_data)
+
+areaplot(metrics.time, [metrics.KE metrics.EE metrics.Dvis], label=["Kinetic" "Elastic" "Dissipation"], lw=2)
+plot(metrics.time, [metrics.KE, metrics.EE, metrics.Dvis], label=["Kinetic" "Elastic" "Dissipation"], lw=2)
+plot(metrics.time, [metrics.KE, metrics.EE, metrics.Dvis, metrics.Dir], label=["Kinetic" "Elastic" "Dissipation" "Dirichlet"], lw=2)
