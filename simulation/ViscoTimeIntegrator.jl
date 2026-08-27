@@ -9,14 +9,14 @@ using JLD2
 
 ## Domain
 
-function generate_tessellation(; width, thick, hrefinement, hdivisions, args...)
+function generate_tessellation(; width, thick, hrefinement, xdivisions, args...)
   domain = (-0.5width, 0.5width, -0.5width, 0.5width, 0.0, thick)
-  partition = hrefinement .* (hdivisions, hdivisions, 1)
+  partition = hrefinement .* (xdivisions, xdivisions, 1)
   geometry = CartesianDiscreteModel(domain, partition)
   labels = get_face_labeling(geometry)
   add_tag_from_tags!(labels, "top",    CartesianTags.faceXY1⁺)
   add_tag_from_tags!(labels, "bottom", CartesianTags.faceXY0⁺)
-  add_tag_from_vertex_filter!(labels, "center", geometry, p -> abs(p[1]) < 0.51width/hdivisions && abs(p[2]) < 0.51width/hdivisions)
+  add_tag_from_vertex_filter!(labels, "center", geometry, p -> abs(p[1]) < 0.51width/xdivisions && abs(p[2]) < 0.51width/xdivisions)
   geometry
 end
 
@@ -59,7 +59,7 @@ function solve_problem(data)
   
   geometry = generate_tessellation(; data...)
 
-  writevtk(geometry, outpath)
+  writevtk(geometry, outpath * "_geometry")
 
   # Discrete domain, test FE
 
@@ -118,7 +118,7 @@ function solve_problem(data)
 
   # Post-processor
 
-  fields = (:time, :KE, :EE, :Dvis, :Dir)
+  fields = (:time, :KE, :EE, :Dvis, :Wext)
   metrics = NamedTuple(f => Float64[] for f in fields)
 
   function post_metrics!(data, step, time)
@@ -126,18 +126,18 @@ function solve_problem(data)
     b = assemble_vector(v -> residual(uh⁺, v), DirichletFESpace(Vu))[:]
     Δu_dir = get_dirichlet_dof_values(Uu) - get_dirichlet_dof_values(Uu⁻)
     Dvis⁻ = step > 1 ? data.Dvis[end] : 0.0
-    Dir⁻ = step > 1 ? data.Dir[end] : 0.0
+    Wext⁻ = step > 1 ? data.Wext[end] : 0.0
     push!(data.time, time)
-    push!(data.KE, sum(∫( 0.5ρ₀*υh·υh )dΩ))
-    push!(data.EE, sum(∫( Ψ∘(Fh, Fh⁻, Ah...) )dΩ))
+    push!(data.KE,   sum(∫( 0.5ρ₀*υh·υh )dΩ))
+    push!(data.EE,   sum(∫( Ψ∘(Fh, Fh⁻, Ah...) )dΩ))
     push!(data.Dvis, sum(∫( D∘(Fh, Fh⁻, Ah...) )dΩ) * Δt + Dvis⁻)
-    push!(data.Dir, b · Δu_dir + Dir⁻)
+    push!(data.Wext, b · Δu_dir + Wext⁻)
   end
 
   function post_vtk!(pvd, step, time)
     if mod(step, 10) == 0
-      Ph = interpolate_L2_field(∂Ψ∂F ∘ (Fh, Fh⁻, Ah...), Ω, dΩ)
-      Jh = interpolate_L2_field(J∘Fh, Ω, dΩ)
+      Ph = interpolate_L2_field(∂Ψ∂F ∘ (Fh, Fh⁻, Ah...), dΩ)
+      Jh = interpolate_L2_field(J∘Fh, dΩ)
       pvd[time] = createvtk(Ω, outpath * @sprintf("_%03d", step), cellfields=["u" => uh⁺, "J" => Jh, "P" => Ph])
     end
   end
@@ -196,11 +196,11 @@ problem_data = let
   width = 0.2
   thick = 0.001
   speed = 0.1
-  hdivisions = 7
+  xdivisions = 7
   hrefinement = 1
   prefinement = 2
   t_end = 0.5
-  CFL = 0.4
+  CFL = 0.2
   Δt = CFL * thick / (prefinement * hrefinement * speed)
 
   dir_u_tags = ["center"]
@@ -208,11 +208,10 @@ problem_data = let
   dir_u_time = [t -> t*speed]
   dirichlet_u = DirichletBC(dir_u_tags, dir_u_values, dir_u_time)
 
-  (; width, thick, speed, hrefinement, hdivisions, prefinement, t_end, Δt, dirichlet_u)
+  (; width, thick, speed, hrefinement, xdivisions, prefinement, t_end, Δt, dirichlet_u)
 end
 
 metrics, uh = solve_problem(problem_data)
 
-areaplot(metrics.time, [metrics.KE metrics.EE metrics.Dvis], label=["Kinetic" "Elastic" "Dissipation"], lw=2)
-plot(metrics.time, [metrics.KE, metrics.EE, metrics.Dvis], label=["Kinetic" "Elastic" "Dissipation"], lw=2)
-plot(metrics.time, [metrics.KE, metrics.EE, metrics.Dvis, metrics.Dir], label=["Kinetic" "Elastic" "Dissipation" "Dirichlet"], lw=2)
+areaplot(metrics.time, [metrics.KE metrics.EE metrics.Dvis], label=["Kinetic" "Elastic" "Dissipation"])
+plot!(metrics.time, metrics.Wext, label="External", lw=2, style=:dash)
