@@ -9,10 +9,10 @@ Parameters fitted with the [HyperCalibration](https://github.com/miguelmaso/Hype
 Parameter | Estimate ± Margin  | Rel. Err (%) | Sensitivity
 ----------|--------------------|--------------|----------
 μe        | 1.34e+04 ± 2.4e+02 | 1.8          | 1278.6
-μ1        | 2.99e+04 ± 1.1e+03 | 3.7          | 20.9      
-t1        |     7.52 ± 0.59    | 7.9          | 13.5      
-μ2        | 1.07e+04 ± 5e+02   | 4.7          | 44.2      
-t2        |      159 ± 14      | 8.8          | 4.9
+μ1        | 3.12e+04 ± 3.4e+03 | 11.0         | 18.0
+t1        |     6.45 ± 1.9     | 29.0         | 12.1
+μ2        | 1.16e+04 ± 3.2e+03 | 27.5         | 48.1
+t2        |      140 ± 76      | 54.2         | 6.0
 
 ![](docs/img/cyclic_loading_fixed_rate.png)
 

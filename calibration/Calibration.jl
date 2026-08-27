@@ -63,12 +63,12 @@ rand_params = sample_parameters(noneq_result)
 models = map(splat(build_visco), eachcol(rand_params))
 
 experiment = first(filter(r -> max_stretch(r) ≈ 1.98 && rate(r) ≈ 0.03, cyclic_loading_set))  # 1.98
-p = plot(xlabel="Stretch [-]", ylabel="Stress [KPa]", units_scale=1e-3)
+p = plot(xlabel="Stretch [-]", ylabel="Stress [KPa]")
 for model in models
   σ_pred = evaluate_stress(model, experiment.protocol, experiment.condition, experiment.geometry)
   λ_exper = independent_variable(experiment)
-  plot!(λ_exper, σ_pred, color=1, alpha=0.05, label=false)
+  plot!(λ_exper, σ_pred .* 1e-3, color=1, alpha=0.05, label=false)
 end
-plot!(noneq_result, experiment, color=[1 :black], label=["Model" "Data"])
+plot!(noneq_result, experiment, color=[1 :black], label=["Model" "Data"], units_scale=1e-3)
 display(p);
 
