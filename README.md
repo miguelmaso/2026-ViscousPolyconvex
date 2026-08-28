@@ -4,7 +4,7 @@ Numerical examples showcasing the use of the viscous model implemented in [Hyper
 
 ## VHB 4905 characterization
 
-Parameters fitted with the [HyperCalibration](https://github.com/miguelmaso/HyperCalibration.jl) library:
+The material characterization has been performed with the [HyperCalibration](https://github.com/miguelmaso/HyperCalibration.jl) library, and the data is described in the [data](https://github.com/miguelmaso/2026-ViscousPolyconvex/tree/main/calibration/data) folder. The fitted parameters are summarized below:
 
 Parameter | Estimate ± Margin  | Rel. Err (%) | Sensitivity
 ----------|--------------------|--------------|----------
