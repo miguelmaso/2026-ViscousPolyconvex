@@ -82,7 +82,7 @@ function solve_problem(data)
 
   Uu  = TrialFESpace(Vu, data.dirichlet_u)
   Uu⁻ = TrialFESpace(Vu, data.dirichlet_u)
-  Uυ  = TrialFESpace(Vu, data.dirichlet_u)
+  Uυ  = TrialFESpace(Vu, VectorValue(0.0, 0.0, data.speed))
   uh⁺ = FEFunction(Uu,  zero_free_values(Uu))
   uh⁻ = FEFunction(Uu⁻, zero_free_values(Uu))
   υh  = FEFunction(Uυ,  zero_free_values(Uυ))
@@ -125,8 +125,8 @@ function solve_problem(data)
     ρ₀ = 960.0
     b = assemble_vector(v -> residual(uh⁺, v), DirichletFESpace(Vu))[:]
     Δu_dir = get_dirichlet_dof_values(Uu) - get_dirichlet_dof_values(Uu⁻)
-    Dvis⁻ = step > 1 ? data.Dvis[end] : 0.0
-    Wext⁻ = step > 1 ? data.Wext[end] : 0.0
+    Dvis⁻ = step > 0 ? data.Dvis[end] : 0.0
+    Wext⁻ = step > 0 ? data.Wext[end] : 0.0
     push!(data.time, time)
     push!(data.KE,   sum(∫( 0.5ρ₀*υh·υh )dΩ))
     push!(data.EE,   sum(∫( Ψ∘(Fh, Fh⁻, Ah...) )dΩ))
@@ -136,9 +136,9 @@ function solve_problem(data)
 
   function post_vtk!(pvd, step, time)
     if mod(step, 10) == 0
-      Ph = interpolate_L2_field(∂Ψ∂F ∘ (Fh, Fh⁻, Ah...), dΩ)
-      Jh = interpolate_L2_field(J∘Fh, dΩ)
-      pvd[time] = createvtk(Ω, outpath * @sprintf("_%03d", step), cellfields=["u" => uh⁺, "J" => Jh, "P" => Ph])
+      Ph = interpolate_L2_field(∂Ψ∂F ∘ (Fh, Fh⁻, Ah...), Ω, dΩ)
+      Jh = interpolate_L2_field(J∘Fh, Ω, dΩ)
+      pvd[time] = createvtk(Ω, outpath * @sprintf("_%03d", step), cellfields=["u" => uh⁺, "v" => υh, "J" => Jh, "P" => Ph])
     end
   end
 
@@ -213,5 +213,5 @@ end
 
 metrics, uh = solve_problem(problem_data)
 
-areaplot(metrics.time, [metrics.KE metrics.EE metrics.Dvis], label=["Kinetic" "Elastic" "Dissipation"])
-plot!(metrics.time, metrics.Wext, label="External", lw=2, style=:dash)
+areaplot(metrics.time, [metrics.Dvis metrics.KE metrics.EE], label=["Dissipation" "Kinetic" "Elastic"])
+plot!(metrics.time, metrics.Wext, label="External", color=:black, lw=3, style=:dot)
