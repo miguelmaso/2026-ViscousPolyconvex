@@ -4,7 +4,7 @@ Numerical examples showcasing the use of the viscous model implemented in [Hyper
 
 ## VHB 4905 characterization
 
-The material characterization has been performed with the [HyperCalibration](https://github.com/miguelmaso/HyperCalibration.jl) library, and the data is described in the [data](https://github.com/miguelmaso/2026-ViscousPolyconvex/tree/main/calibration/data) folder. The fitted parameters are summarized below:
+The material characterization has been performed with the [HyperCalibration](https://github.com/miguelmaso/HyperCalibration.jl) library, and the data is described in the [data](https://github.com/miguelmaso/2026-ViscousPolyconvex/tree/main/calibration/data) folder. A new-Hookean constitutive model has been selected both for the equilibrium and the non-equilibrium terms, and the fitted parameters are summarized below:
 
 Parameter | Estimate ± Margin  | Rel. Err (%) | Sensitivity
 ----------|--------------------|--------------|----------
@@ -19,6 +19,6 @@ t2        |      140 ± 76      | 54.2         | 6.0
 
 ## Numerical example
 
-Dynamic integration of a thin membrane with out-of-plane displacement.
+Dynamic integration of a thin membrane with out-of-plane displacement. The previously characterized constitutive model is used for the simulation.
 
 ![](docs/img/ViscoTimeIntegrator.gif)

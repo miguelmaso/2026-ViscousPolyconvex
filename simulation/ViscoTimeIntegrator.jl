@@ -30,9 +30,9 @@ function build_model(; args...)
   κr = 2.5e6   # [Pa]
 
   # Non-equilibrium branches
-  μ1 = 30.9e3  # [Pa]
-  τ1 = 6.65    # [s]
-  μ2 = 11.4e3  # [Pa]
+  μ1 = 31.2e3  # [Pa]
+  τ1 = 6.45    # [s]
+  μ2 = 11.6e3  # [Pa]
   τ2 = 144.1   # [s]
 
   equilibrium = NeoHookean3D(μ=μe, λ=0.0) + VolumetricEnergy(λ=κr)
