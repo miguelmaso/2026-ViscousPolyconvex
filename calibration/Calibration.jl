@@ -40,7 +40,7 @@ build_branch(μ, τ) = ViscousPolyconvex(μ=μ, τ=τ)
 build_branches(p...) = map(splat(build_branch), Iterators.partition(p, 2))
 build_visco(p...) = GeneralizedMaxwell(equil_result.model, build_branches(p...)...)
 n_branches = 2
-pn = reduce(vcat, ["μ$i", "t$i"] for i in 1:n_branches)  # Parameter names
+pn = reduce(vcat, ["μ$i", "τ$i"] for i in 1:n_branches)  # Parameter names
 p0 = reduce(vcat, [  1e4,   1.0] for _ in 1:n_branches)  # Initial seed
 lb = reduce(vcat, [  1e3,  -1.0] for _ in 1:n_branches)  # Lower search limits
 ub = reduce(vcat, [  1e5,   4.0] for _ in 1:n_branches)  # Upper search limits
@@ -50,7 +50,7 @@ f(p) = normalized_mse(build_visco, p, cyclic_loading_set)
 noneq_opt = optimize(f, p0, ParticleSwarm())
 noneq_result = CalibrationResult(build_visco, Optim.minimizer(noneq_opt), cyclic_loading_set)
 
-print(parameter_stats(noneq_result, names=pn))
+display(MIME("text/latex"), parameter_stats(noneq_result, names=pn))
 fixed_stretch_subset = filter(r -> max_stretch(r) ≈ 1.98, cyclic_loading_set)
 fixed_loading_rate_subset = filter(r -> rate(r) ≈ 0.03, cyclic_loading_set)
 display(plot(noneq_result, fixed_stretch_subset, xlabel="Stretch [-]", ylabel="Stress [KPa]", units_scale=1e-3, labels=map(pretty_label(rate), fixed_stretch_subset)))
@@ -64,11 +64,7 @@ models = map(splat(build_visco), eachcol(rand_params))
 
 experiment = first(filter(r -> max_stretch(r) ≈ 1.98 && rate(r) ≈ 0.03, cyclic_loading_set))  # 1.98
 p = plot(xlabel="Stretch [-]", ylabel="Stress [KPa]")
-for model in models
-  σ_pred = evaluate_stress(model, experiment.protocol, experiment.condition, experiment.geometry)
-  λ_exper = independent_variable(experiment)
-  plot!(λ_exper, σ_pred .* 1e-3, color=1, alpha=0.05, label=false)
-end
+plot!(models, experiment, color=1, alpha=0.05, label=false, units_scale=1e-3)
 plot!(noneq_result, experiment, color=[1 :black], label=["Model" "Data"], units_scale=1e-3)
 display(p);
 
