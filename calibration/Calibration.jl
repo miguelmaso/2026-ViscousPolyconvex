@@ -30,7 +30,7 @@ f(p) = normalized_mse(build_equilibrium, p, quasi_static_set)
 equil_opt = optimize(f, p0, NelderMead())
 equil_result = CalibrationResult(build_equilibrium, Optim.minimizer(equil_opt), quasi_static_set)
 
-println(parameter_stats(equil_result, names=pn))
+display(parameter_stats(equil_result, names=pn))
 display(plot(equil_result, quasi_static_set[1], xlabel="Stretch [-]", ylabel="Stress [KPa]", units_scale=1e-3))
 
 
@@ -42,15 +42,13 @@ build_visco(p...) = GeneralizedMaxwell(equil_result.model, build_branches(p...).
 n_branches = 2
 pn = reduce(vcat, ["μ$i", "τ$i"] for i in 1:n_branches)  # Parameter names
 p0 = reduce(vcat, [  1e4,   1.0] for _ in 1:n_branches)  # Initial seed
-lb = reduce(vcat, [  1e3,  -1.0] for _ in 1:n_branches)  # Lower search limits
-ub = reduce(vcat, [  1e5,   4.0] for _ in 1:n_branches)  # Upper search limits
 
 f(p) = normalized_mse(build_visco, p, cyclic_loading_set)
 
 noneq_opt = optimize(f, p0, ParticleSwarm())
 noneq_result = CalibrationResult(build_visco, Optim.minimizer(noneq_opt), cyclic_loading_set)
 
-display(MIME("text/latex"), parameter_stats(noneq_result, names=pn))
+display(parameter_stats(noneq_result, names=pn))
 fixed_stretch_subset = filter(r -> max_stretch(r) ≈ 1.98, cyclic_loading_set)
 fixed_loading_rate_subset = filter(r -> rate(r) ≈ 0.03, cyclic_loading_set)
 display(plot(noneq_result, fixed_stretch_subset, xlabel="Stretch [-]", ylabel="Stress [KPa]", units_scale=1e-3, labels=map(pretty_label(rate), fixed_stretch_subset)))
