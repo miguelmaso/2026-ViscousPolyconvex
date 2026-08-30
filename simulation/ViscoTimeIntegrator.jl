@@ -126,9 +126,10 @@ function solve_problem(data)
     b = assemble_vector(v -> residual(uh⁺, v), DirichletFESpace(Vu))[:]
     Δu_dir = get_dirichlet_dof_values(Uu) - get_dirichlet_dof_values(Uu⁻)
     Dvis⁻ = step > 0 ? data.Dvis[end] : 0.0
-    Wext⁻ = step > 0 ? data.Wext[end] : 0.0
+    Wext⁻ = step > 0 ? data.Wext[end] : sum(∫( 0.5ρ₀*υh·υh )dΩ)
+    υh⁺ = 2/Δt*(uh⁺ - uh⁻) - υh
     push!(data.time, time)
-    push!(data.KE,   sum(∫( 0.5ρ₀*υh·υh )dΩ))
+    push!(data.KE,   sum(∫( 0.5ρ₀*υh⁺·υh⁺ )dΩ))
     push!(data.EE,   sum(∫( Ψ∘(Fh, Fh⁻, Ah...) )dΩ))
     push!(data.Dvis, sum(∫( D∘(Fh, Fh⁻, Ah...) )dΩ) * Δt + Dvis⁻)
     push!(data.Wext, b · Δu_dir + Wext⁻)
@@ -212,6 +213,10 @@ problem_data = let
 end
 
 metrics, uh = solve_problem(problem_data)
+
+@show sum(getindex.([metrics.Dvis, metrics.KE, metrics.EE, -metrics.Wext], 1))
+@show sum(metrics.Dvis + metrics.KE + metrics.EE - metrics.Wext) * problem_data.Δt
+@show sum(metrics.Dvis) * problem_data.Δt
 
 areaplot(metrics.time, [metrics.Dvis metrics.KE metrics.EE], label=["Dissipation" "Kinetic" "Elastic"])
 plot!(metrics.time, metrics.Wext, label="External", color=:black, lw=3, style=:dot)
