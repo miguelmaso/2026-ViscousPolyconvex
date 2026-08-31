@@ -6,6 +6,8 @@ using Printf
 using Plots
 using JLD2
 
+default(palette = :seaborn_colorblind)
+
 
 ## Domain
 
@@ -68,7 +70,7 @@ function solve_problem(data)
   order = data.prefinement
   degree = 2 * order
   Ω = Triangulation(geometry)
-  Γ = BoundartTriangulation(geometry, tags=data.neumann.tag)
+  Γ = BoundaryTriangulation(geometry, tags=data.neumann.tag)
   dΩ = Measure(Ω, degree)
   dΓ = Measure(Γ, degree)
 
@@ -128,18 +130,17 @@ function solve_problem(data)
   fields = (:time, :KE, :EE, :Dvis, :Wext)
   metrics = NamedTuple(f => Float64[] for f in fields)
 
-  function post_metrics!(data, step, time)
+  function post_metrics!(m, step, time)
     ρ₀ = 960.0
-    b = assemble_vector(v -> residual(time)(uh⁺, v), DirichletFESpace(Vu))[:]
-    Δu_dir = get_dirichlet_dof_values(Uu) - get_dirichlet_dof_values(Uu⁻)
-    Dvis⁻ = step > 0 ? data.Dvis[end] : 0.0
-    Wext⁻ = step > 0 ? data.Wext[end] : sum(∫( 0.5ρ₀*υh·υh )dΩ)
+    f_mid = data.neumann.value * data.neumann.time(time - Δt/2)
+    Dvis⁻ = step > 0 ? m.Dvis[end] : 0.0
+    Wext⁻ = step > 0 ? m.Wext[end] : sum(∫( 0.5ρ₀*υh·υh )dΩ)
     υh⁺ = 2/Δt*(uh⁺ - uh⁻) - υh
-    push!(data.time, time)
-    push!(data.KE,   sum(∫( 0.5ρ₀*υh⁺·υh⁺ )dΩ))
-    push!(data.EE,   sum(∫( Ψ∘(Fh, Fh⁻, Ah...) )dΩ))
-    push!(data.Dvis, sum(∫( D∘(Fh, Fh⁻, Ah...) )dΩ) * Δt + Dvis⁻)
-    push!(data.Wext, b · Δu_dir + Wext⁻)
+    push!(m.time, time)
+    push!(m.KE,   sum(∫( 0.5ρ₀*υh⁺·υh⁺ )dΩ))
+    push!(m.EE,   sum(∫( Ψ∘(Fh, Fh⁻, Ah...) )dΩ))
+    push!(m.Dvis, sum(∫( D∘(Fh, Fh⁻, Ah...) )dΩ) * Δt + Dvis⁻)
+    push!(m.Wext, sum(∫( f_mid · (uh⁺ - uh⁻) )dΓ) + Wext⁻)
   end
 
   function post_vtk!(pvd, step, time)
@@ -213,8 +214,8 @@ problem_data = let
 
   neumann = let
     tag = "center"
-    value = [0.0, 0.0, 1.0]
-    time = EvolutionFunctions.triangular(0.02)
+    value = VectorValue(0.0, 0.0, 20.0)
+    time = EvolutionFunctions.triangular(0.05)
     (; tag, value, time)
   end
 
@@ -223,9 +224,13 @@ end
 
 metrics, uh = solve_problem(problem_data)
 
-@show sum(getindex.([metrics.Dvis, metrics.KE, metrics.EE, -metrics.Wext], 1))
-@show sum(metrics.Dvis + metrics.KE + metrics.EE - metrics.Wext) * problem_data.Δt
+Wdiff = metrics.Dvis + metrics.KE + metrics.EE - metrics.Wext
+
+@show Wdiff[1]
+@show sum(Wdiff) * problem_data.Δt
 @show sum(metrics.Dvis) * problem_data.Δt
 
 areaplot(metrics.time, [metrics.Dvis metrics.KE metrics.EE], label=["Dissipation" "Kinetic" "Elastic"])
-plot!(metrics.time, metrics.Wext, label="External", color=:black, lw=3, style=:dot)
+plot!(metrics.time, metrics.Wext, label="External", color=:black, lw=3, style=:dot, legend=:outertop, legend_column=-1)
+
+plot(metrics.time, Wdiff, lw=2, label="Dvis + Ψkin + Ψel - Wext")
