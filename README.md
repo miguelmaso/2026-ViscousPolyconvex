@@ -22,3 +22,7 @@ t2        |      140 ± 76      | 54.2         | 6.0
 Dynamic integration of a thin membrane with out-of-plane displacement. The previously characterized constitutive model is used for the simulation.
 
 ![](docs/img/ViscoTimeIntegrator.gif)
+
+The image below presents the energy balance for a simulation with a Neumann boundary condition applied at the center of the membrane. From time *t=0* to *t=0.1* the force follows a triangular evolution law, having the maximum at time *t=0.05*. From *t=0.1* and up, the force is constant and equal to *0N*.
+
+![](docs/img/energy_conservation.png)

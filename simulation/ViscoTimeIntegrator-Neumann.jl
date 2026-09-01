@@ -230,7 +230,7 @@ Wdiff = metrics.Dvis + metrics.KE + metrics.EE - metrics.Wext
 @show sum(Wdiff) * problem_data.Δt
 @show sum(metrics.Dvis) * problem_data.Δt
 
-areaplot(metrics.time, [metrics.Dvis metrics.KE metrics.EE], label=["Dissipation" "Kinetic" "Elastic"])
+areaplot(metrics.time, [metrics.Dvis metrics.KE metrics.EE], label=["Dissipation" "Kinetic" "Elastic"], alpha=0.8)
 plot!(metrics.time, metrics.Wext, label="External", color=:black, lw=3, style=:dot, legend=:outertop, legend_column=-1)
 
 plot(metrics.time, Wdiff, lw=2, label="Dvis + Ψkin + Ψel - Wext")
