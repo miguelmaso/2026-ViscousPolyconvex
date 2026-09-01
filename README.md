@@ -16,6 +16,10 @@ t2        |      140 ± 76      | 54.2         | 6.0
 
 ![](docs/img/cyclic_loading_fixed_rate.png)
 
+The figure below presents the uncertainty related to the confidence intervals reported in the summary table. For the sake of clarity, a single experiment is presented, specifically, at maximum stretch 100% and loading rate 0.03/s.
+
+![](docs/img/cyclic_loading_uncertainty.png)
+
 
 ## Numerical example
 
