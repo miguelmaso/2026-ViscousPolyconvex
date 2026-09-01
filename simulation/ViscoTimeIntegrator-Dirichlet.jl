@@ -6,6 +6,8 @@ using Printf
 using Plots
 using JLD2
 
+default(palette = :seaborn_colorblind)
+
 
 ## Domain
 
