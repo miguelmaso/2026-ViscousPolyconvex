@@ -3,12 +3,20 @@ using HyperFEM, HyperCalibration
 using Optim
 using CSV
 using Plots
+using Random
+using LaTeXStrings
 
 default(
   linewidth = 2,
   mswidth = 0,
-  palette = :seaborn_colorblind
+  palette = :seaborn_colorblind,
+  size = (390, 290),
+  guidefontsize = 9,
+  tickfontsize = 8,
+  legendfontsize = 8,
+  fontfamily="Computer Modern",
 )
+Random.seed!(1234)
 
 ## Load data
 
@@ -31,7 +39,10 @@ equil_opt = optimize(f, p0, NelderMead())
 equil_result = CalibrationResult(build_equilibrium, Optim.minimizer(equil_opt), quasi_static_set)
 
 display(parameter_stats(equil_result, names=pn))
-display(plot(equil_result, quasi_static_set[1], xlabel="Stretch [-]", ylabel="Stress [KPa]", units_scale=1e-3))
+let p = plot(equil_result, quasi_static_set[1], xlabel="Stretch λ [-]", ylabel="Nominal stress $(L"P_{11}") [kPa]", units_scale=1e-3, label=false)
+  display(p)
+  savefig(p, joinpath(@__DIR__, "../latex/figures/calibration_equilibrium.pdf"))
+end
 
 
 ## Non-equilibrium branches
@@ -51,8 +62,14 @@ noneq_result = CalibrationResult(build_visco, Optim.minimizer(noneq_opt), cyclic
 display(parameter_stats(noneq_result, names=pn))
 fixed_stretch_subset = filter(r -> max_stretch(r) ≈ 1.98, cyclic_loading_set)
 fixed_loading_rate_subset = filter(r -> rate(r) ≈ 0.03, cyclic_loading_set)
-display(plot(noneq_result, fixed_stretch_subset, xlabel="Stretch [-]", ylabel="Stress [KPa]", units_scale=1e-3, labels=map(pretty_label(rate), fixed_stretch_subset)))
-display(plot(noneq_result, fixed_loading_rate_subset, xlabel="Stretch [-]", ylabel="Stress [KPa]", units_scale=1e-3, labels=map(pretty_label(max_stretch), fixed_loading_rate_subset)))
+let p = plot(noneq_result, fixed_stretch_subset, xlabel="Stretch λ [-]", ylabel="Nominal stress $(L"P_{11}") [kPa]", units_scale=1e-3, labels=map(pretty_label(rate), fixed_stretch_subset))
+  display(p)
+  savefig(p, joinpath(@__DIR__, "../latex/figures/calibration_fixed_stretch.pdf"))
+end
+let p = plot(noneq_result, fixed_loading_rate_subset, xlabel="Stretch λ [-]", ylabel="Nominal stress $(L"P_{11}") [kPa]", units_scale=1e-3, labels=map(pretty_label(max_stretch), fixed_loading_rate_subset))
+  display(p)
+  savefig(p, joinpath(@__DIR__, "../latex/figures/calibration_fixed_rate.pdf"))
+end
 
 
 ## Uncertainty visualization
@@ -61,8 +78,10 @@ rand_params = sample_parameters(noneq_result)
 models = map(splat(build_visco), eachcol(rand_params))
 
 experiment = first(filter(r -> max_stretch(r) ≈ 1.98 && rate(r) ≈ 0.03, cyclic_loading_set))  # 1.98
-p = plot(xlabel="Stretch [-]", ylabel="Stress [KPa]")
-plot!(models, experiment, color=1, alpha=0.05, label=false, units_scale=1e-3)
-plot!(noneq_result, experiment, color=[1 :black], label=["Model" "Data"], units_scale=1e-3)
-display(p);
+let p = plot(xlabel="Stretch λ [-]", ylabel="Nominal stress $(L"P_{11}") [kPa]", ylims=[-3, 63])
+  plot!(models, experiment, color=1, alpha=0.05, label=false, units_scale=1e-3)
+  plot!(noneq_result, experiment, color=[1 :black], label=["Model" "Data"], units_scale=1e-3)
+  display(p)
+  savefig(p, joinpath(@__DIR__, "../latex/figures/uncertainty_$(n_branches)_branches.pdf"))
+end
 

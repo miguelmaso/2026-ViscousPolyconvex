@@ -37,3 +37,4 @@ JuliaLocalPreferences.toml
 *.gif
 *.mp4
 !docs/img/*
+!latex/figures/*
