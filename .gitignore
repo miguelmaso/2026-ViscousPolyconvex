@@ -38,3 +38,5 @@ JuliaLocalPreferences.toml
 *.mp4
 !docs/img/*
 !latex/figures/*
+*.ppt
+*.pptx

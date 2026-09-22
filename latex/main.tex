@@ -139,11 +139,11 @@ The whole section is produced by the script \texttt{calibration/Calibration.jl} 
 \paragraph{Problem set-up.}
 A square membrane of side $w=200$\,mm and thickness $h=1$\,mm, $\Omega_0=(-w/2,w/2)^2\times(0,h)$, with density $\rho_0=960\,\mathrm{kg/m^3}$, is described by the two-branch model of Table~\ref{tab:calibration}, used as is. Near-incompressibility is enforced by the volumetric term $U(J)=\tfrac{\kappa}{2}(J-1)^2$ with $\kappa=2.5$\,MPa, i.e.\ $\kappa\approx45\,\mu_0$ with $\mu_0=\mu_e+\mu_1+\mu_2=56.2$\,kPa the instantaneous shear modulus; $|J-1|<6\cdot10^{-4}$ throughout the simulation.
 No displacement constraint is prescribed (Figure~\ref{fig:setup}): the membrane is free-floating, so that no work is exchanged through reactions and the energy balance involves the applied load only.
-The load is an out-of-plane traction $\bar{\bm{t}}=\bar t_0\,f(t)\,\bm{e}_3$, $\bar t_0=20$\,Pa, applied on the upper and lower faces of the central element, a $w/7\times w/7$ patch (peak resultant force $\approx33$\,mN). The pulse $f(t)$ is triangular: it grows linearly from 0 to 1 at $t=0.05$\,s and vanishes for $t\geq0.1$\,s, after which the membrane evolves freely.
+The load is an out-of-plane traction $\bar{\bm{t}}=\bar t_0\,f(t)\,\bm{e}_3$, $\bar t_0=20$\,Pa, applied on the six faces of the central element, a $w/7\times w/7\times h$ block (peak resultant force $\approx35$\,mN). The pulse $f(t)$ is triangular: it grows linearly from 0 to 1 at $t=0.05$\,s and vanishes for $t\geq0.1$\,s, after which the membrane evolves freely.
 
 \begin{figure}[ht]
   \centering
-  \fig{membrane_setup}{0.75\textwidth}{Geometry, mesh, loaded patch, traction pulse $f(t)$}
+  \includegraphics[width=\linewidth]{figures/membrane_setup.png}
   \caption{Free-floating square membrane: geometry, $7\times7\times1$ mesh, loaded central patch and time evolution $f(t)$ of the applied traction.}
   \label{fig:setup}
 \end{figure}
@@ -174,7 +174,7 @@ Figure~\ref{fig:energy} shows that the pulse injects $W_{\mathrm{ext}}=219\,\mu$
 
 \begin{figure}[ht]
   \centering
-  \fig{energy_balance}{0.75\textwidth}{Stacked $D$, $K$, $\mathcal{E}$ vs.\ $W_{\mathrm{ext}}$; balance residual}
+  \includegraphics[width=0.75\linewidth]{figures/energy_balance.png}
   \caption{Energy balance: accumulated dissipation $D$, kinetic energy $K$ and stored energy $\mathcal{E}$ (stacked areas) versus the external work $W_{\mathrm{ext}}$ (dotted line).}
   \label{fig:energy}
 \end{figure}
