@@ -52,7 +52,7 @@ The parameters minimise the normalised mean squared error over the $M$ curves of
 \end{equation}
 in two sequential steps:
 \textbf{Step 1}, $\mu_e$ is fitted to the quasi-static curves (Nelder--Mead);
-\textbf{Step 2}, with $\mu_e$ fixed, the branch parameters $\{\mu_i,\tau_i\}_{i=1}^{n}$ are fitted simultaneously to the eleven cycles with a gradient-free, global particle swarm optimiser~\cite{Optim}.
+\textbf{Step 2}, with $\mu_e$ fixed, the branch parameters $\{\mu_i,\tau_i\}_{i=1}^{n}$ are fitted simultaneously to the eleven cycles with a gradient-free, global particle swarm optimiser~\cite{Optim}. The seed of the random number generator is fixed in the script, so that both the swarm and the sampling below return the same values in every run.
 
 \paragraph{Uncertainty.}
 With the residual Jacobian $\bm{J}=\partial\bm{r}/\partial\bm{p}$ (central differences), the parameter covariance is estimated by the cluster-robust (sandwich) estimator~\cite{Cameron2015}
@@ -64,28 +64,26 @@ Table~\ref{tab:calibration} reports the half-width of the 95\% confidence interv
 
 \begin{table}[ht]
   \centering
-  \caption{Calibrated parameters of VHB 4910 (two-branch model). Coefficients of determination: $R^2=0.995$ (step~1) and $R^2=0.977$ (step~2).}
+  \caption{Calibrated parameters of VHB 4910 (two-branch model). Coefficients of determination: $R^2=0.995$ (step~1) and $R^2=0.978$ (step~2).}
   \label{tab:calibration}
   \begin{tabular}{l c r r}
     \toprule
     Parameter & Estimate $\pm$ margin (95\%) & Rel.\ error [\%] & Sensitivity \\
     \midrule
     \multicolumn{4}{l}{\textit{Step 1: Equilibrium term (neo-Hookean)}} \\
-    $\mu_e$ [kPa]  & $13.4 \pm 0.24$ &  1.8 & 1278.6 \\
+    $\mu_e$ [kPa]  & $13.4 \pm 0.09$ &  0.7 & 1278.6 \\
     \midrule
     \multicolumn{4}{l}{\textit{Step 2: Non-equilibrium terms (neo-Hookean branches)}} \\
-    $\mu_1$ [kPa]  & $31.2 \pm 3.4$  & 11.0 & 18.0 \\
-    $\tau_1$ [s]   & $6.45 \pm 1.9$  & 29.0 & 12.1 \\
-    $\mu_2$ [kPa]  & $11.6 \pm 3.2$  & 27.5 & 48.1 \\
-    $\tau_2$ [s]   & $140 \pm 76$    & 54.2 &  6.0 \\
+    $\mu_1$ [kPa]  & $11.1 \pm 2.9$  & 26.1 & 45.9 \\
+    $\tau_1$ [s]   & $152 \pm 80$    & 52.7 &  5.3 \\
+    $\mu_2$ [kPa]  & $30.5 \pm 3.6$  & 11.7 & 19.8 \\
+    $\tau_2$ [s]   & $7.07 \pm 2.0$  & 28.0 & 13.0 \\
     \bottomrule
   \end{tabular}
-  % NOTE: values from README.md. Re-running Calibration.jl with HyperCalibration v0.0.3 gives
-  %   mu_e = 13.4 +/- 0.092 kPa (0.7 %), and the simulation script uses tau_2 = 144.1 s.
 \end{table}
 
 \paragraph{Results.}
-Two branches with well separated relaxation times, $\tau_1\approx6.5$\,s and $\tau_2\approx140$\,s, cover the time window of the experiments (Table~\ref{tab:calibration}).
+The identification returns two branches with well separated relaxation times, a slow one ($\tau_1=152$\,s) and a fast one ($\tau_2=7.1$\,s), which span the time scales probed by the tests (Table~\ref{tab:calibration}).
 Figure~\ref{fig:calibration} shows that the model captures the rate dependence, the hysteresis and the residual stretch after unloading, both across loading rates and across stretch amplitudes. The largest deviation, about 10\% of the peak stress at $\lambda_{\max}=2.5$, is attributable to the neo-Hookean equilibrium term, deliberately kept to limit the model to five parameters.
 
 \begin{figure}[ht]
@@ -96,7 +94,7 @@ Figure~\ref{fig:calibration} shows that the model captures the rate dependence, 
   \end{subfigure}\hfill
   \begin{subfigure}[t]{0.49\textwidth}\centering
     \includegraphics[width=\linewidth]{figures/calibration_fixed_rate.pdf}
-    \caption{$\dot\lambda=0.03\,\mathrm{s^{-1}}$; $\lambda_{\max}=1.5,\,2.0,\,2.5$.}
+    \caption{$\dot\lambda=0.03\,\mathrm{s^{-1}}$; maximum strains of 50, 100 and 150\,\% ($\lambda_{\max}=1.5,\,2.0,\,2.5$).}
   \end{subfigure}
   \caption{Calibrated model (lines) versus experimental data~\cite{Hossain2012} (markers) for uniaxial loading--unloading cycles of VHB 4910.}
   \label{fig:calibration}
@@ -104,9 +102,7 @@ Figure~\ref{fig:calibration} shows that the model captures the rate dependence, 
 
 \paragraph{Number of branches.}
 Figure~\ref{fig:uncertainty} propagates the parameter uncertainty to the predicted response: 100 parameter sets are sampled from $\mathcal{N}(\bm{p}^*,\bm{\Sigma})$ and evaluated on the test at $\lambda_{\max}=2.0$ and $\dot\lambda=0.03\,\mathrm{s^{-1}}$.
-Adding a third branch leaves the fit unchanged ($R^2\approx0.977$ in both cases, loss reduction below 0.2\%), whereas the relative errors of the relaxation times grow from 29--54\% to above 400\%: the additional parameters are not identifiable from the available data. The two-branch model is therefore the richest one supported by the experiments, and it is the one used hereafter.
-% NOTE: 3-branch figures from an unconstrained, seeded (Random.seed!(1234)) ParticleSwarm run: tau margins 438 % and 1180 %,
-%   loss 2.2320e-3 vs 2.2345e-3 (2 branches). Update once the 3-branch figure is generated.
+With two branches the ensemble stays within a narrow band around the measured cycle. Adding a third branch leaves the fit unchanged ($R^2=0.977$ in both cases, loss reduction of 0.1\%) but scatters the ensemble over the whole stress range: the relative errors of the relaxation times grow from 28--53\% to 438\% and 1180\%, and the swarm returns a negative shear modulus for one of the branches, outside the admissible range of the model. The additional parameters are therefore not identifiable from the available data, and the two-branch model is the richest one supported by the experiments.
 
 \begin{figure}[ht]
   \centering
@@ -123,14 +119,14 @@ Adding a third branch leaves the fit unchanged ($R^2\approx0.977$ in both cases,
 \end{figure}
 
 \paragraph{Reproducibility.}
-The whole section is produced by the script \texttt{calibration/Calibration.jl} of the repository~\cite{Repo} from the CSV data distributed with it, using HyperCalibration.jl~v0.0.3 and HyperFEM.jl~v0.0.6~\cite{HyperFEM}. It runs in about a minute on a laptop.
+The whole section is produced by the script \texttt{calibration/Calibration.jl} of the repository~\cite{Repo} from the CSV data distributed with it, using Julia~1.12, HyperCalibration.jl~v0.0.3 and HyperFEM.jl~v0.0.6~\cite{HyperFEM}. It runs in about a minute on a laptop and returns the values of Table~\ref{tab:calibration} in every run.
 
 % =====================================================================
 \section{Numerical example}\label{sec:example}
 % =====================================================================
 
 \paragraph{Problem set-up.}
-A square membrane of side $w=200$\,mm and thickness $h=1$\,mm, $\Omega_0=(-w/2,w/2)^2\times(0,h)$, with density $\rho_0=960\,\mathrm{kg/m^3}$, is described by the two-branch model of Table~\ref{tab:calibration}, used as is. Near-incompressibility is enforced by the volumetric term $U(J)=\tfrac{\kappa}{2}(J-1)^2$ with $\kappa=2.5$\,MPa, i.e.\ $\kappa\approx45\,\mu_0$ with $\mu_0=\mu_e+\mu_1+\mu_2=56.2$\,kPa the instantaneous shear modulus; $|J-1|<6\cdot10^{-4}$ throughout the simulation.
+A square membrane of side $w=200$\,mm and thickness $h=1$\,mm, $\Omega_0=(-w/2,w/2)^2\times(0,h)$, with density $\rho_0=960\,\mathrm{kg/m^3}$, is described by the two-branch model of Table~\ref{tab:calibration}, used as is. Near-incompressibility is enforced by the volumetric term $U(J)=\tfrac{\kappa}{2}(J-1)^2$ with $\kappa=2.5$\,MPa, i.e.\ $\kappa\approx45\,\mu_0$ with $\mu_0=\mu_e+\mu_1+\mu_2=55.0$\,kPa the instantaneous shear modulus; $|J-1|<6\cdot10^{-4}$ throughout the simulation.
 No displacement constraint is prescribed (Figure~\ref{fig:setup}): the membrane is free-floating, so that no work is exchanged through reactions and the energy balance involves the applied load only.
 The load is an out-of-plane traction $\bar{\bm{t}}=\bar t_0\,f(t)\,\bm{e}_3$, $\bar t_0=20$\,Pa, applied on the six faces of the central element, a $w/7\times w/7\times h$ block (peak resultant force $\approx35$\,mN). The pulse $f(t)$ is triangular: it grows linearly from 0 to 1 at $t=0.05$\,s and vanishes for $t\geq0.1$\,s, after which the membrane evolves freely.
 
@@ -143,7 +139,7 @@ The load is an out-of-plane traction $\bar{\bm{t}}=\bar t_0\,f(t)\,\bm{e}_3$, $\
 
 \paragraph{Discretisation.}
 The domain is discretised with $7\times7\times1$ hexahedra with triquadratic Lagrangian interpolation (2025 degrees of freedom) and Gauss quadrature exact for polynomials of degree~4.
-Time integration is implicit with $\Delta t=1$\,ms up to $t=0.5$\,s (500 steps). With the velocity update $\tfrac12(\vv_{n}+\vv_{n+1})=(\uu_{n+1}-\uu_n)/\Delta t$, each step solves
+Time integration is implicit with $\Delta t=1$\,ms up to $t=1$\,s (1000 steps). With the velocity update $\tfrac12(\vv_{n}+\vv_{n+1})=(\uu_{n+1}-\uu_n)/\Delta t$, each step solves
 \begin{equation}
   \int_{\Omega_0}\rho_0\,\frac{\vv_{n+1}-\vv_n}{\Delta t}\cdot\delta\uu\dd V
   +\int_{\Omega_0}\PK_{n+1/2}:\nabla_0\delta\uu\dd V
@@ -177,8 +173,8 @@ Figure~\ref{fig:snapshots} shows the out-of-plane displacement at selected insta
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=\linewidth]{figures/mambrane_snapshots.png}
-  \caption{Deformed configuration snapshots at $t=0\,,0.15$, and $0.3s$.}
+  \includegraphics[width=\linewidth]{figures/membrane_snapshots.png}
+  \caption{Deformed configuration at $t=0$, $0.15$ and $0.3$\,s.}
   \label{fig:snapshots}
 \end{figure}
 

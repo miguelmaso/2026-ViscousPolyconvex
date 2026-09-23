@@ -27,15 +27,17 @@ end
 
 function build_model(; args...)
 
+  # Calibrated parameters, see calibration/Calibration.jl (Random.seed!(1234))
+
   # Equilibrium branch
-  μe = 13.4e3  # [Pa]
-  κr = 2.5e6   # [Pa]
+  μe = 13446.1  # [Pa]
+  κr = 2.5e6    # [Pa]
 
   # Non-equilibrium branches
-  μ1 = 31.2e3  # [Pa]
-  τ1 = 6.45    # [s]
-  μ2 = 11.6e3  # [Pa]
-  τ2 = 144.1   # [s]
+  μ1 = 11053.7  # [Pa]
+  τ1 = 151.68   # [s]
+  μ2 = 30480.1  # [Pa]
+  τ2 = 7.0731   # [s]
 
   equilibrium = NeoHookean3D(μ=μe, λ=0.0) + VolumetricEnergy(λ=κr)
   branch_1 = ViscousPolyconvex(μ=μ1, τ=τ1)
