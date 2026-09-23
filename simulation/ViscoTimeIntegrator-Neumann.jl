@@ -6,7 +6,10 @@ using Printf
 using Plots
 using JLD2
 
-default(palette = :seaborn_colorblind)
+default(
+  palette = :seaborn_colorblind,
+  fontfamily = "Computer Modern",
+)
 
 
 ## Domain
@@ -232,8 +235,11 @@ Wdiff = metrics.Dvis + metrics.KE + metrics.EE - metrics.Wext
 @show sum(Wdiff) * problem_data.Δt
 @show sum(metrics.Dvis) * problem_data.Δt
 
-areaplot(metrics.time, [metrics.Dvis metrics.KE metrics.EE], label=["Dissipation" "Kinetic" "Elastic"], alpha=0.9)
-plot!(metrics.time, metrics.Wext, label="External", color=:black, lw=3, style=:dot)
-plot!(xlabel="Time [s]", ylabel="Energy [J]", legend=:outertop, legend_column=-1)
+let p = areaplot(metrics.time, [metrics.Dvis metrics.KE metrics.EE], label=["Dissipation" "Kinetic" "Elastic"], alpha=0.9)
+  plot!(metrics.time, metrics.Wext, label="External", color=:black, lw=3, style=:dot)
+  plot!(xlabel="Time [s]", ylabel="Energy [J]", legend=:outertop, legend_column=-1)
+  display(p)
+  savefig(p, joinpath(@__DIR__, "../latex/figures/energy_balance.pdf"))
+end
 
 plot(metrics.time, Wdiff, lw=2, label="Dvis + Ψkin + Ψel - Wext")
