@@ -159,7 +159,7 @@ The kinetic energy $K$, the stored energy $\mathcal{E}$, the accumulated viscous
   \end{gathered}
 \end{equation}
 are monitored at every step and must satisfy $K+\mathcal{E}+D=W_{\mathrm{ext}}$.
-Figure~\ref{fig:energy} shows that the pulse contributes $W_{\mathrm{ext}}=220\,\mu$J during $t\le0.1$\,s. Afterwards the membrane is isolated: energy is continuously exchanged between its kinetic and elastic parts, while the dissipation grows monotonically, up to $D=9.1\,\mu$J at $t=1$\,s, 4\% of the injected energy. The balance residual $|K+\mathcal{E}+D-W_{\mathrm{ext}}|$ grows linearly in time and stays below $2.9\,\mu$J, i.e.\ below 1.3\% of the injected energy, over the 1000 steps. It is a discretisation error: halving the time step reduces it to $0.95\,\mu$J, while the dissipation itself changes by 1\%.
+Figure~\ref{fig:energy} shows that the pulse contributes $W_{\mathrm{ext}}=220\,\mu$J during $t\le0.1$\,s. Afterwards the membrane is isolated: energy is continuously exchanged between its kinetic and elastic parts, while the dissipation grows monotonically, up to $D=9.1\,\mu$J at $t=1$\,s, 4\% of the injected energy. The balance residual $|K+\mathcal{E}+D-W_{\mathrm{ext}}|$ grows linearly in time and stays below $2.9\,\mu$J, i.e.\ below 1.3\% of the injected energy, over the 1000 steps. It is a discretisation error of second order: dividing $\Delta t$ by two and by four reduces it to $0.95$ and $0.19\,\mu$J, while the dissipation converges to $9.23\,\mu$J.
 
 \begin{figure}[htb]
   \centering
