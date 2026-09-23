@@ -6,7 +6,7 @@ using Printf
 using Plots
 using JLD2
 
-default(palette = :seaborn_muted6)
+default(palette = :seaborn_colorblind)
 
 
 ## Domain
@@ -147,7 +147,7 @@ function solve_problem(data)
     if mod(step, 10) == 0
       Ph = interpolate_L2_field(∂Ψ∂F ∘ (Fh, Fh⁻, Ah...), Ω, dΩ)
       Jh = interpolate_L2_field(J∘Fh, Ω, dΩ)
-      pvd[time] = createvtk(Ω, outpath * @sprintf("_%03d", step), cellfields=["u" => uh⁺, "v" => υh, "J" => Jh, "P" => Ph])
+      pvd[time] = createvtk(Ω, outpath * @sprintf("_%03d", step), cellfields=["u" => uh⁺, "v" => υh, "J" => Jh, "P" => Ph], nsubcells=data.prefinement)
     end
   end
 
@@ -206,9 +206,9 @@ problem_data = let
   thick = 0.001
   speed = 0.1
   xdivisions = 7
-  hrefinement = 1
+  hrefinement = 2
   prefinement = 2
-  t_end = 0.5
+  t_end = 1.0
   CFL = 0.2
   Δt = CFL * thick / (prefinement * hrefinement * speed)
 

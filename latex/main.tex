@@ -17,13 +17,6 @@
 \setlength{\emergencystretch}{2em}
 \renewcommand{\UrlBreaks}{\do\/\do-\do.}
 
-% Include figures/<name>.pdf (or .png); draw a labelled placeholder while the file does not exist.
-\newcommand{\fig}[3]{%
-  \IfFileExists{figures/#1.pdf}{\includegraphics[width=#2]{figures/#1.pdf}}{%
-  \IfFileExists{figures/#1.png}{\includegraphics[width=#2]{figures/#1.png}}{%
-  \fbox{\parbox[c][\dimexpr#2*55/100\relax][c]{\dimexpr#2-2\fboxsep-2\fboxrule\relax}{\centering\small
-    \texttt{figures/\detokenize{#1}.pdf}\\[4pt]\textcolor{gray}{#3}}}}}}
-
 \newcommand{\F}{\bm{F}}
 \newcommand{\PK}{\bm{P}}
 \newcommand{\uu}{\bm{u}}
@@ -184,8 +177,8 @@ Figure~\ref{fig:snapshots} shows the out-of-plane displacement at selected insta
 
 \begin{figure}[ht]
   \centering
-  \fig{displacement_snapshots}{\textwidth}{Deformed configuration coloured by $u_3$ at selected instants}
-  \caption{Deformed configuration coloured by the out-of-plane displacement $u_3$ at $t=\,$[to be completed]\,s.}
+  \includegraphics[width=\linewidth]{figures/mambrane_snapshots.png}
+  \caption{Deformed configuration snapshots at $t=0\,,0.15$, and $0.3s$.}
   \label{fig:snapshots}
 \end{figure}
 
