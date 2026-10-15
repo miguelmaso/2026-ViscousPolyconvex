@@ -28,13 +28,17 @@ function build_model(; args...)
 
   # Equilibrium branch
   μe = 13.4e3  # [Pa]
-  κr = 91.43e3 # [Pa]  ## 2.5e6   # [Pa]
 
   # Non-equilibrium branches
   μ1 = 31.2e3  # [Pa]
   τ1 = 6.45    # [s]
   μ2 = 11.6e3  # [Pa]
   τ2 = 144.1   # [s]
+
+  # Bulk modulus
+  bulk_modulus(μ, ν) = 2/3*(1 - ν)/(1 - 2ν)*μ
+  κr = bulk_modulus(μe + μ1 + μ2, 0.49)
+  # κr = 91.43e3 # [Pa]  ## 2.5e6   # [Pa]
 
   equilibrium = NeoHookean3D(μ=μe, λ=0.0) + VolumetricEnergy(λ=κr)
   branch_1 = ViscousPolyconvex(μ=μ1, τ=τ1)
@@ -73,7 +77,7 @@ function solve_problem(data)
 
   solver = FESolver(NewtonSolver(LUSolver(); maxiter=20, atol=1e-8,  rtol=1e-8,  verbose=true))
   reffe = ReferenceFE(lagrangian, VectorValue{3,Float64}, order)
-  Vu = TestFESpace(geometry, reffe, data.dirichlet_u, conformity=:H1)
+  Vu = TestFESpace(geometry, reffe, data.dirichlet, conformity=:H1)
 
   println("======================================\n")
   println("Degrees of freedom : $(Vu.nfree)\n")
@@ -81,10 +85,9 @@ function solve_problem(data)
 
   # Trial FE spaces and state variables
 
-  Uu  = TrialFESpace(Vu, data.dirichlet_u)
-  Uu⁻ = TrialFESpace(Vu, data.dirichlet_u)
-  Uυ  = TrialFESpace(Vu, data.dirichlet_u)
-  dirichlet_velocity!(Uυ, data.dirichlet_u, 0.0)
+  Uu  = TrialFESpace(Vu, data.dirichlet)
+  Uu⁻ = TrialFESpace(Vu, data.dirichlet)
+  Uυ  = TrialFESpace(Vu, get_time_derivative(data.dirichlet, 0.0))
   uh⁺ = FEFunction(Uu,  zero_free_values(Uu))
   uh⁻ = FEFunction(Uu⁻, zero_free_values(Uu))
   υh  = FEFunction(Uυ,  zero_free_values(Uυ))
@@ -166,7 +169,7 @@ function solve_problem(data)
         #-----------------------------------------
         # Apply boundary conditions and solve
         #-----------------------------------------
-        TrialFESpace!(Uu, data.dirichlet_u, time)
+        TrialFESpace!(Uu, data.dirichlet, time)
 
         op = FEOperator(residual, jacobian, Uu, Vu)
         solve!(uh⁺, solver, op)
@@ -197,47 +200,23 @@ end
 
 ## Problem definition & solve
 
-"""
-    rotation_displacement(; center, axis, angle)
-
-Return `(x, t) -> u`, the displacement of a rigid rotation of `x` about the line through `center`
-with direction `axis`, by `angle(t)` (radians, right-hand rule).
-"""
-function rotation_displacement(; center=VectorValue(0.0, 0.0, 0.0), axis=VectorValue(0.0, 1.0, 0.0), angle)
-  k = axis / norm(axis)
-  K = TensorValue(0.0, k[3], -k[2], -k[3], 0.0, k[1], k[2], -k[1], 0.0)  # column-major: K⋅v = k × v
-  I = one(K)
-  function (x, t)
-    θ = angle(t)
-    R = I + sin(θ) * K + (1 - cos(θ)) * (K ⋅ K)  # Rodrigues
-    R ⋅ (x - center) + center - x
-  end
-end
-
-"Set the Dirichlet values of `space` to the derivative of `bc` at `t`, by central differences."
-function dirichlet_velocity!(space, bc, t; h=1e-6)
-  TrialFESpace!(space, bc, t + h, 2h)
-  get_dirichlet_dof_values(space) ./= 2h
-  space
-end
-
 problem_data = let
   width = 0.01
   long = 0.06
-  angular_velocity = 2π
-  hrefinement = 3
+  ω = 2π
+  hrefinement = 2
   prefinement = 2
   t_end = 3.0
-  linear_velocity = 0.5width * √2 * angular_velocity
+  linear_velocity = 0.5width * √2 * ω
   Δt = 0.2 * width / (prefinement * hrefinement * linear_velocity)
 
   # Rigid rotation of the top face about the column axis (y); bottom face clamped.
-  rotation = rotation_displacement(axis=VectorValue(0.0, 1.0, 0.0), angle=t -> angular_velocity * t)
-  dirichlet_u = BoundaryConditions(
+  rotation = ((X,Y,Z), t) -> VectorValue(X*cos(ω*t) + Z*sin(ω*t) -X, 0.0, -X*sin(ω*t) + Z*cos(ω*t) - Z)
+  dirichlet = BoundaryConditions(
     BoundaryCondition("top", NonSeparable(rotation)),
     BoundaryCondition("bottom", [0.0, 0.0, 0.0]))
 
-  (; width, long, angular_velocity, hrefinement, prefinement, t_end, Δt, dirichlet_u)
+  (; width, long, hrefinement, prefinement, t_end, Δt, dirichlet)
 end
 
 metrics, uh = solve_problem(problem_data)
