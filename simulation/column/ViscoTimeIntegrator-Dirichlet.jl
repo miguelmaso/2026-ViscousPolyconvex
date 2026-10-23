@@ -90,7 +90,7 @@ function solve_problem(data)
   Uυ  = TrialFESpace(Vu, get_time_derivative(data.dirichlet, 0.0))
   uh⁺ = FEFunction(Uu,  zero_free_values(Uu))
   uh⁻ = FEFunction(Uu⁻, zero_free_values(Uu))
-  υh  = FEFunction(Uυ,  zero_free_values(Uυ))
+  υh  = interpolate(data.velocity₀, Uυ)
 
   Fh  = F∘∇(uh⁺)'
   Fh⁻ = F∘∇(uh⁻)'
@@ -103,9 +103,6 @@ function solve_problem(data)
   Ψ, ∂Ψ∂F, ∂∂Ψ∂FF = model()
   D = Dissipation(model)
   P_updater(P, F, Fn, A...) = (true, ∂Ψ∂F(F, Fn, A...))
-
-  # res_mec(time) = (u, v) -> ∫( ∇(v)' ⊙ (∂Ψ∂F ∘ (F∘(∇(u)'), Fh⁻, Ah...)) )dΩ
-  # jac_mec(time) = (u, du, v) -> ∫( ∇(v)' ⊙ ((∂∂Ψ∂FF ∘ (F∘(∇(u)'), Fh⁻, Ah...)) ⊙ ∇(du)') )dΩ
 
   function residual(u, v)  # TODO: convertir en una función del tiempo/Λ
     ρ₀ = 960.0
@@ -141,12 +138,12 @@ function solve_problem(data)
   end
 
   function post_vtk!(pvd, step, time)
-    if mod(step, 10) == 0
+    if mod(step, 5) == 0
       P = ∂Ψ∂F ∘ (Fh, Fh⁻, Ah...)
-      Ph = interpolate_L2_field(P, Ω, dΩ)
-      Jh = interpolate_L2_field(J∘Fh, Ω, dΩ)
-      ph = interpolate_L2_field(1/(3*(J∘Fh)) * P ⊙ Fh, Ω, dΩ)
-      pvd[time] = createvtk(Ω, outpath * @sprintf("_%03d", step), cellfields=["u" => uh⁺, "v" => υh, "J" => Jh, "P" => Ph, "p" => ph])
+      Ph = interpolate_L2_field(P, dΩ)
+      Jh = interpolate_L2_field(J∘Fh, dΩ)
+      ph = interpolate_L2_field(1/(3*(J∘Fh)) * P ⊙ Fh, dΩ)
+      pvd[time] = createvtk(Ω, outpath * @sprintf("_%03d", step), cellfields=["u" => uh⁺, "v" => υh, "J" => Jh, "P" => Ph, "p" => ph], nsubcells=data.prefinement)
     end
   end
 
@@ -164,7 +161,7 @@ function solve_problem(data)
       while time < t_end
         step += 1
         time += Δt
-        printstyled(@sprintf("Step: %i\nTime: %.3f s\n", step, time), color=:green, bold=true)
+        printstyled(@sprintf("Step: %i\nTime: %.4f s\n", step, time), color=:green, bold=true)
 
         #-----------------------------------------
         # Apply boundary conditions and solve
@@ -201,29 +198,33 @@ end
 ## Problem definition & solve
 
 problem_data = let
-  width = 0.01
-  long = 0.06
-  ω = 2π
+  width = 0.01  # [m]
+  long = 0.06   # [m]
+  ω₀ = 1100.0   # [1/s]
+  velocity₀((X,Y,Z),) = ω₀ * sin(π * Y / long) * VectorValue(Z, 0.0, -X)
   hrefinement = 2
   prefinement = 2
-  t_end = 3.0
-  linear_velocity = 0.5width * √2 * ω
+  t_end = 0.1
+  linear_velocity = 0.5width * √2 * ω₀
   Δt = 0.2 * width / (prefinement * hrefinement * linear_velocity)
+  @show Δt
 
-  # Rigid rotation of the top face about the column axis (y); bottom face clamped.
-  rotation = ((X,Y,Z), t) -> VectorValue(X*cos(ω*t) + Z*sin(ω*t) -X, 0.0, -X*sin(ω*t) + Z*cos(ω*t) - Z)
   dirichlet = BoundaryConditions(
-    BoundaryCondition("top", NonSeparable(rotation)),
-    BoundaryCondition("bottom", [0.0, 0.0, 0.0]))
+    BoundaryCondition("bottom", [0.0, 0.0, 0.0])
+  )
 
-  (; width, long, hrefinement, prefinement, t_end, Δt, dirichlet)
+  (; width, long, velocity₀, hrefinement, prefinement, t_end, Δt, dirichlet)
 end
 
 metrics, uh = solve_problem(problem_data)
 
-@show sum(getindex.([metrics.Dvis, metrics.KE, metrics.EE, -metrics.Wext], 1))
-@show sum(metrics.Dvis + metrics.KE + metrics.EE - metrics.Wext) * problem_data.Δt
-@show sum(metrics.Dvis) * problem_data.Δt
+Wdiff = metrics.Dvis + metrics.KE + metrics.EE - metrics.Wext
 
-areaplot(metrics.time, [metrics.Dvis metrics.KE metrics.EE], label=["Dissipation" "Kinetic" "Elastic"])
-plot!(metrics.time, metrics.Wext, label="External", color=:black, lw=3, style=:dot)
+@show sum(metrics.Dvis) * problem_data.Δt
+@show sum(Wdiff) * problem_data.Δt
+
+let p = areaplot(metrics.time, [metrics.Dvis metrics.KE metrics.EE], label=["Dissipation" "Kinetic" "Elastic"])
+  plot!(metrics.time, metrics.Wext, label="External", color=:black, lw=3, style=:dot)
+  plot!(xlabel="Time [s]", ylabel="Energy [J]", legend=:outertop, legend_column=-1)
+  display(p)
+end
