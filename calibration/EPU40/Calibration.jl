@@ -83,7 +83,7 @@ noneq_result = CalibrationResult(build_visco, Optim.minimizer(noneq_opt), cyclic
 
 display(parameter_stats(noneq_result, names=pn))
 let p = plot(xlabel=XLABEL, ylabel=YLABEL)
-  fixed_stretch_subset = filter(r -> max_stretch(r) ≈ FIXED_STRETCH, cyclic_loading_set)
+  subset = filter(r -> max_stretch(r) ≈ FIXED_STRETCH, cyclic_loading_set)
   plot!(noneq_result, subset, units_scale=UNITS_SCALE, labels=pretty_labels(rate, subset))
   display(p)
   savefig(p, joinpath(FIG_DIR, "calibration_fixed_stretch.pdf"))
