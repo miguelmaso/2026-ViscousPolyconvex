@@ -22,5 +22,5 @@ The experiments contained in the cyclic loading dataset have the following field
 
 <a id="1">[1]</a> M. Hossain, D. Khoi Vu and P. Steinmann, Experimental study and numerical modelling of VHB 4910 polymer, Computational Materials Science, 2012, vol 59, p. 65-74, [10.1016/j.commatsci.2012.02.027](https://doi.org/10.1016/j.commatsci.2012.02.027)
 
-<a id="1">[1]</a> Ankit Rohatgi, Web Plot Digitizer v5.2, [https://automeris.io](https://automeris.io)
+<a id="2">[2]</a> Ankit Rohatgi, Web Plot Digitizer v5.2, [https://automeris.io](https://automeris.io)
 
