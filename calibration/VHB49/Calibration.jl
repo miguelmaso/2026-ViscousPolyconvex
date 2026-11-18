@@ -30,13 +30,8 @@ const EQUIL_NAMES = ["μ"]
 const EQUIL_SEED  = [1e4]
 
 # Non-equilibrium branches (μ, τ)
-const N_BRANCHES  = 2
+const N_BRANCHES  = 3
 const BRANCH_SEED = [1e4, 1.0]
-
-# Plots
-const QS_PLOT        = [1 => false]  # id => label
-const FIXED_STRETCH  = 1.98    # λmax of the fixed-stretch subset
-const FIXED_RATE     = 0.03    # rate of the fixed-rate subset
 
 const XLABEL = "Stretch λ [-]"
 const YLABEL = "Nominal stress $(L"P_{11}") [$(UNITS)]"
@@ -45,7 +40,9 @@ const YLABEL = "Nominal stress $(L"P_{11}") [$(UNITS)]"
 ## Load data
 
 quasi_static_set = CSV.read(joinpath(DATA_DIR, "quasi-static.csv"), UniaxialQuasiStaticTest)
-cyclic_loading_set = CSV.read(joinpath(DATA_DIR, "cyclic-loading.csv"), UniaxialCyclicLoadingTest)
+cyclic_loading_set_1 = CSV.read(joinpath(DATA_DIR, "cyclic-loading.csv"), UniaxialCyclicLoadingTest)
+cyclic_loading_set_2 = CSV.read(joinpath(DATA_DIR, "liao_2020/cyclic-loading-293.csv"), UniaxialCyclicLoadingTest)
+cyclic_loading_set = [cyclic_loading_set_1; cyclic_loading_set_2]
 
 sort!(quasi_static_set, by = r -> r.id)
 sort!(cyclic_loading_set, by = r -> rate(r))
@@ -82,14 +79,14 @@ noneq_result = CalibrationResult(build_visco, Optim.minimizer(noneq_opt), cyclic
 
 display(parameter_stats(noneq_result, names=pn))
 let p = plot(xlabel=XLABEL, ylabel=YLABEL)
-  subset = filter(r -> max_stretch(r) ≈ FIXED_STRETCH, cyclic_loading_set)
+  subset = filter(r -> abs(max_stretch(r) - 2) < 0.1, cyclic_loading_set)
   plot!(noneq_result, subset, units_scale=UNITS_SCALE, labels=pretty_labels(rate, subset))
   display(p)
   savefig(p, joinpath(FIG_DIR, "calibration_fixed_stretch.pdf"))
 end
 let p = plot(xlabel=XLABEL, ylabel=YLABEL)
-  subset = filter(r -> rate(r) ≈ FIXED_RATE, cyclic_loading_set)
-  plot!(noneq_result, subset, units_scale=UNITS_SCALE, labels=pretty_labels(rate, subset))
+  subset = filter(r -> rate(r) ≈ 0.03, cyclic_loading_set)
+  plot!(noneq_result, subset, units_scale=UNITS_SCALE, labels=pretty_labels(max_stretch, subset))
   display(p)
   savefig(p, joinpath(FIG_DIR, "calibration_fixed_rate.pdf"))
 end
@@ -101,7 +98,7 @@ rand_params = sample_parameters(noneq_result)
 models = map(splat(build_visco), eachcol(rand_params))
 
 let p = plot(xlabel=XLABEL, ylabel=YLABEL, ylims=:auto)
-  experiment = only(filter(r -> max_stretch(r) ≈ FIXED_STRETCH && rate(r) ≈ FIXED_RATE, cyclic_loading_set))
+  experiment = only(filter(r -> max_stretch(r) ≈ 1.98 && rate(r) ≈ 0.03, cyclic_loading_set))
   plot!(models, experiment, color=1, alpha=0.05, label=false, units_scale=UNITS_SCALE)
   plot!(noneq_result, experiment, color=[1 :black], label=["Model" "Data"], units_scale=UNITS_SCALE)
   display(p)

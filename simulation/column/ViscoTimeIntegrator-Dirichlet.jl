@@ -140,9 +140,9 @@ function solve_problem(data)
   function post_vtk!(pvd, step, time)
     if mod(step, 5) == 0
       P = ∂Ψ∂F ∘ (Fh, Fh⁻, Ah...)
-      Ph = interpolate_L2_field(P, dΩ)
-      Jh = interpolate_L2_field(J∘Fh, dΩ)
-      ph = interpolate_L2_field(1/(3*(J∘Fh)) * P ⊙ Fh, dΩ)
+      Ph = interpolate_L2_field(P, dΩ, order=order)
+      Jh = interpolate_L2_field(J∘Fh, dΩ, order=order)
+      ph = interpolate_L2_field(1/(3*(J∘Fh)) * P ⊙ Fh, dΩ, order=order)
       pvd[time] = createvtk(Ω, outpath * @sprintf("_%03d", step), cellfields=["u" => uh⁺, "v" => υh, "J" => Jh, "P" => Ph, "p" => ph], nsubcells=data.prefinement)
     end
   end
@@ -200,8 +200,8 @@ end
 problem_data = let
   width = 0.01  # [m]
   long = 0.06   # [m]
-  ω₀ = 1100.0   # [1/s]
-  velocity₀((X,Y,Z),) = ω₀ * sin(π * Y / long) * VectorValue(Z, 0.0, -X)
+  ω₀ = 1000.0   # [1/s]
+  velocity₀((X,Y,Z),) = ω₀ * Y / long * VectorValue(Z, 0.0, -X)
   hrefinement = 2
   prefinement = 2
   t_end = 0.1

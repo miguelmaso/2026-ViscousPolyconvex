@@ -1,5 +1,5 @@
 using Revise
-using HyperFEM, HyperFEM.ComputationalModels.PostMetrics
+using HyperFEM
 using Gridap, Gridap.FESpaces, Gridap.Geometry
 using GridapSolvers, GridapSolvers.NonlinearSolvers
 using Printf
@@ -16,13 +16,54 @@ default(
 
 function generate_tessellation(; length, width, thick, hrefinement, xdivisions, args...)
   domain = (-0.5length, 0.5length, -0.5width, 0.5width, 0.0, thick)
-  partition = hrefinement .* (xdivisions, xdivisions÷2, 1)
+  partition = hrefinement .* (xdivisions, xdivisions, 1)
   geometry = CartesianDiscreteModel(domain, partition)
   labels = get_face_labeling(geometry)
   add_tag_from_tags!(labels, "top",    CartesianTags.faceXY1⁺)
   add_tag_from_tags!(labels, "bottom", CartesianTags.faceXY0⁺)
   add_tag_from_vertex_filter!(labels, "center", geometry, ((X,Y,Z),) -> abs(X) < 0.51length/xdivisions && abs(Y) < 0.51length/xdivisions && Z ≈ thick)
   geometry
+end
+
+
+##
+
+function midpoint_update!(v, x⁺, x⁻, Δt)
+  v .*= -1.0
+  v .-= (2.0 / Δt) * x⁻
+  v .+= (2.0 / Δt) * x⁺
+end
+
+
+"""
+    update_velocity!
+
+Update the velocity field `vh` based on the current displacement field `xh⁺`
+and the previous displacement `xh⁻` using a midpoint time-stepping scheme.
+The velocity is updated in place.
+"""
+function update_velocity!(vh, xh⁺, xh⁻, Δt)
+  # TODO: Once moved to Gridap 0.20, a dispatch get_dirichlet_dof_values(::CellField) will be available
+  midpoint_update!(get_free_dof_values(vh), get_free_dof_values(xh⁺), get_free_dof_values(xh⁻), Δt)
+  midpoint_update!(get_dirichlet_dof_values(get_fe_space(vh)), get_dirichlet_dof_values(get_fe_space(xh⁺)), get_dirichlet_dof_values(get_fe_space(xh⁻)), Δt)
+  return vh
+end
+
+
+"""
+    update_displacements!
+
+Update the old displacement field `xh⁻` with the new displacement field `xh⁺`.
+The update is performed in place, modifying `xh⁻` to match both the free dof values
+and the dirichlet dof values of `xh⁺`.
+"""
+function update_displacements!(xh⁻, xh⁺)
+  # TODO: Once moved to Gridap 0.20, a dispatch get_dirichlet_dof_values(::CellField) will be available
+  x = get_free_dof_values(xh⁻)
+  x .= get_free_dof_values(xh⁺)
+  x_dir = get_dirichlet_dof_values(get_fe_space(xh⁻))
+  x_dir .= get_dirichlet_dof_values(get_fe_space(xh⁺))
+  return xh⁻
 end
 
 
@@ -207,8 +248,8 @@ end
 ## Problem definition & solve
 
 problem_data = let
-  length = 0.05  # [m]
-  width = 0.01   # [m]
+  length = 0.1   # [m]
+  width = 0.1    # [m]
   thick = 0.001  # [m]
   xdivisions = 7
   hrefinement = 1
